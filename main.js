@@ -1,5 +1,5 @@
 var express = require('express');
-var googlehome = require('./google-home-notifier.js');
+var googlehome = require('google-home-notifier');
 var ngrok = require('ngrok');
 var bodyParser = require('body-parser');
 var app = express();
