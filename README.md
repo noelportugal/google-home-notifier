@@ -10,7 +10,7 @@ $ npm install google-home-notifier
 ```javascript
 var googlehome = require('google-home-notifier');
 
-googlehome.device('Google Home');
+googlehome.device('Google Home'); // Change to your Google Home name
 googlehome.notify('Hey Foo', function(res) {
   console.log(res);
 });
