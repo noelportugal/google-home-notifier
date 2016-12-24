@@ -32,6 +32,7 @@ curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-noti
 ```
 #### Raspberry Pi
 If you are running from Raspberry Pi make sure you have the following before nunning "npm install":
+Use the latest nodejs dist.
 ```sh
 curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
 sudo apt-get install nodejs
