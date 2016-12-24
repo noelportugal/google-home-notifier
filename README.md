@@ -31,10 +31,18 @@ example:
 curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier
 ```
 #### Raspberry Pi
-If you are running from Raspberry Pi make sure you have the following packages:
+If you are running from Raspberry Pi make sure you have the following before nunning "npm install":
+```sh
+curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
+sudo apt-get install nodejs
+```
+Also install these packages:
 ```sh
 sudo apt-get install git-core libnss-mdns libavahi-compat-libdnssd-dev
 ```
+
+## After "npm install"
+
 Modify the following file "node_modules/mdns/lib/browser.js"
 ```sh
 vi node_modules/mdns/lib/browser.js
