@@ -11,6 +11,7 @@ $ npm install google-home-notifier
 var googlehome = require('google-home-notifier');
 
 googlehome.device('Google Home'); // Change to your Google Home name
+googlehome.accent('us'); // optional: 'us'= american voice (default), 'uk'= british voice
 googlehome.notify('Hey Foo', function(res) {
   console.log(res);
 });
@@ -62,5 +63,3 @@ Browser.defaultResolverSequence = [
 , rst.makeAddressesUnique()
 ];
 ```
-
-
