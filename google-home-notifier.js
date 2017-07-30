@@ -4,10 +4,13 @@ var mdns = require('mdns');
 var googletts = require('google-tts-api');
 var browser = mdns.createBrowser(mdns.tcp('googlecast'));
 var deviceAddress;
-var device = function(name) {
+var language;
+
+var device = function(name, lang = 'en') {
     device = name;
+    language = lang;
     return this;
-}
+};
 
 var notify = function(message, callback) {
   if (!deviceAddress){
@@ -27,17 +30,17 @@ var notify = function(message, callback) {
       callback(res);
     });
   }
-}
+};
 
 var getSpeechUrl = function(text, host, callback) {
-  googletts(text, 'en', 1).then(function (url) {
+  googletts(text, language, 1).then(function (url) {
     onDeviceUp(host, url, function(res){
       callback(res)
     });
   }).catch(function (err) {
     console.error(err.stack);
   });
-}
+};
 
 var onDeviceUp = function(host, url, callback) {
   var client = new Client();
@@ -46,7 +49,7 @@ var onDeviceUp = function(host, url, callback) {
       var media = {
         contentId: url,
         contentType: 'audio/mp3',
-        streamType: 'BUFFERED', // or LIVE
+        streamType: 'BUFFERED' // or LIVE
       };
       player.load(media, { autoplay: true }, function(err, status) {
         client.close();
@@ -60,7 +63,7 @@ var onDeviceUp = function(host, url, callback) {
     client.close();
     callback('error');
   });
-}
+};
 
 exports.device = device;
 exports.notify = notify;
