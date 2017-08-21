@@ -1,7 +1,6 @@
 var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
-var googletts = require('google-tts-api');
 var browser = mdns.createBrowser(mdns.tcp('googlecast'));
 var deviceAddress;
 var language;
@@ -11,6 +10,13 @@ var device = function(name, lang = 'en') {
     language = lang;
     return this;
 };
+
+var googletts = require('google-tts-api');
+var googlettsaccent = 'us';
+var accent = function(accent) {
+  googlettsaccent = accent;
+  return this;
+}
 
 var notify = function(message, callback) {
   if (!deviceAddress){
@@ -93,5 +99,6 @@ var onDeviceUp = function(host, url, callback) {
 };
 
 exports.device = device;
+exports.accent = accent;
 exports.notify = notify;
 exports.play = play;

@@ -7,6 +7,7 @@ const serverPort = 8080;
 
 var deviceName = 'Google Home';
 googlehome.device(deviceName);
+// googlehome.accent('uk'); // uncomment for british voice
 
 var urlencodedParser = bodyParser.urlencoded({ extended: false });
 
