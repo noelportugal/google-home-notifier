@@ -32,6 +32,26 @@ var notify = function(message, callback) {
   }
 };
 
+var play = function(mp3_url, callback) {
+  if (!deviceAddress){
+    browser.start();
+    browser.on('serviceUp', function(service) {
+      console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
+      if (service.name.includes(device.replace(' ', '-'))){
+        deviceAddress = service.addresses[0];
+        getPlayUrl(mp3_url, deviceAddress, function(res) {
+          callback(res);
+        });
+      }
+      browser.stop();
+    });
+  }else {
+    getPlayUrl(mp3_url, deviceAddress, function(res) {
+      callback(res);
+    });
+  }
+};
+
 var getSpeechUrl = function(text, host, callback) {
   googletts(text, language, 1).then(function (url) {
     onDeviceUp(host, url, function(res){
@@ -42,10 +62,17 @@ var getSpeechUrl = function(text, host, callback) {
   });
 };
 
+var getPlayUrl = function(url, host, callback) {
+    onDeviceUp(host, url, function(res){
+      callback(res)
+    });
+};
+
 var onDeviceUp = function(host, url, callback) {
   var client = new Client();
   client.connect(host, function() {
     client.launch(DefaultMediaReceiver, function(err, player) {
+
       var media = {
         contentId: url,
         contentType: 'audio/mp3',
@@ -67,3 +94,4 @@ var onDeviceUp = function(host, url, callback) {
 
 exports.device = device;
 exports.notify = notify;
+exports.play = play;
