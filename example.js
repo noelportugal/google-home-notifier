@@ -16,10 +16,16 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   console.log(req.body);
   var text = req.body.text;
   if (text){
-    res.send(deviceName + ' will say: ' + text + '\n');
-    googlehome.notify(text, function(res) {
-      console.log(res);
-    });
+    try {
+      googlehome.notify(text, function(notifyRes) {
+        console.log(notifyRes);
+        res.send(deviceName + ' will say: ' + text + '\n');
+      });
+    } catch(err) {
+      console.log(err);
+      res.sendStatus(500);
+      res.send(err);
+    }
   }else{
     res.send('Please POST "text=Hello Google Home"');
   }
