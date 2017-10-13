@@ -11,6 +11,11 @@ var device = function(name, lang = 'en') {
     return this;
 };
 
+var ip = function(ip) {
+  deviceAddress = ip;
+  return this;
+}
+
 var googletts = require('google-tts-api');
 var googlettsaccent = 'us';
 var accent = function(accent) {
@@ -98,6 +103,7 @@ var onDeviceUp = function(host, url, callback) {
   });
 };
 
+exports.ip = ip;
 exports.device = device;
 exports.accent = accent;
 exports.notify = notify;
