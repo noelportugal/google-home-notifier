@@ -11,6 +11,8 @@ $ npm install google-home-notifier
 var googlehome = require('google-home-notifier');
 
 googlehome.device('Google Home'); // Change to your Google Home name
+// or if you know your Google Home IP
+// googlehome.ip('192.168.x.x');
 googlehome.accent('us'); // optional: 'us'= american voice (default), 'uk'= british voice
 googlehome.notify('Hey Foo', function(res) {
   console.log(res);
