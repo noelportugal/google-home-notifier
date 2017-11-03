@@ -29,14 +29,13 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   }else{
     res.send('Please POST "text=Hello Google Home"');
   }
-
 })
 
 app.listen(serverPort, function () {
   ngrok.connect(serverPort, function (err, url) {
     console.log('POST "text=Hello Google Home" to:');
     console.log('    http://localhost:' + serverPort + '/google-home-notifier');
-    console.log('    ' +url + '/google-home-notifier');
+    console.log('    ' + url + '/google-home-notifier');
     console.log('example:');
     console.log('curl -X POST -d "text=Hello Google Home" ' + url + '/google-home-notifier');
   });
