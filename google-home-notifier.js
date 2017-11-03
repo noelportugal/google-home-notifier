@@ -6,9 +6,9 @@ var deviceAddress;
 var language;
 
 var device = function(name, lang = 'en') {
-    device = name;
-    language = lang;
-    return this;
+  device = name;
+  language = lang;
+  return this;
 };
 
 var ip = function(ip) {
@@ -44,7 +44,7 @@ var notify = function(message, callback) {
 };
 
 var play = function(mp3_url, callback) {
-  if (!deviceAddress){
+  if (!deviceAddress) {
     browser.start();
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
@@ -56,7 +56,7 @@ var play = function(mp3_url, callback) {
       }
       browser.stop();
     });
-  }else {
+  } else {
     getPlayUrl(mp3_url, deviceAddress, function(res) {
       callback(res);
     });
@@ -74,9 +74,9 @@ var getSpeechUrl = function(text, host, callback) {
 };
 
 var getPlayUrl = function(url, host, callback) {
-    onDeviceUp(host, url, function(res){
-      callback(res)
-    });
+  onDeviceUp(host, url, function(res){
+    callback(res)
+  });
 };
 
 var onDeviceUp = function(host, url, callback) {
