@@ -23,7 +23,7 @@ var accent = function(accent) {
   return this;
 }
 
-var notify = function(message, callback) {
+var notify = function(message, callback = function() {}) {
   if (!deviceAddress){
     browser.start();
     browser.on('serviceUp', function(service) {
@@ -43,7 +43,7 @@ var notify = function(message, callback) {
   }
 };
 
-var play = function(mp3_url, callback) {
+var play = function(mp3_url, callback = function() {}) {
   if (!deviceAddress) {
     browser.start();
     browser.on('serviceUp', function(service) {
