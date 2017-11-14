@@ -13,7 +13,7 @@ var language = 'pl'; // if not set 'us' language will be used
 
 googlehome.device('Google Home', language); // Change to your Google Home name
 // or if you know your Google Home IP
-// googlehome.ip('192.168.x.x', language);
+// googlehome.ip('192.168.1.20', language);
 
 googlehome.notify('Hey Foo', function(res) {
   console.log(res);
@@ -32,11 +32,11 @@ $ npm install
 $ node example.js
 Endpoints:
     http://192.168.1.20:8091/google-home-notifier
-    https://83fc1475.ngrok.io/google-home-notifier
+    https://xxxxx.ngrok.io/google-home-notifier
 GET example:
-curl -X GET https://83fc1475.ngrok.io/google-home-notifier?text=Hello+Google+Home
+curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=Hello+Google+Home
 POST example:
-curl -X POST -d "text=Hello Google Home" https://83fc1475.ngrok.io/google-home-notifier
+curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier
 
 ```
 #### Raspberry Pi
