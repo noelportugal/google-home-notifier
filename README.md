@@ -30,12 +30,13 @@ $ git clone https://github.com/noelportugal/google-home-notifier
 $ cd google-home-notifier
 $ npm install
 $ node example.js
-GET parameter "text=Hello+Google+Home" to:
-    http://192.168.1.37:8091/google-home-notifier
-    https://f92cab62.ngrok.io/google-home-notifier
-example:
-curl -X GET https://f92cab62.ngrok.io/google-home-notifier?text=Hello+Google+Home
-
+Endpoints:
+    http://192.168.1.20:8091/google-home-notifier
+    https://83fc1475.ngrok.io/google-home-notifier
+GET example:
+curl -X GET https://83fc1475.ngrok.io/google-home-notifier?text=Hello+Google+Home
+POST example:
+curl -X POST -d "text=Hello Google Home" https://83fc1475.ngrok.io/google-home-notifier
 
 ```
 #### Raspberry Pi
