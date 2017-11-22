@@ -27,13 +27,21 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   }
 
   googlehome.ip(ip, language);
-  
+
   if (text){
     try {
-      googlehome.notify(text, function(notifyRes) {
-        console.log(notifyRes);
-        res.send(deviceName + ' will say: ' + text + '\n');
-      });
+      if (text.startsWith('http'){
+        var mp3_url = text;
+        googlehome.play(mp3_url, function(notifyRes) {
+          console.log(notifyRes);
+          res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
+        });
+      } else {
+        googlehome.notify(text, function(notifyRes) {
+          console.log(notifyRes);
+          res.send(deviceName + ' will say: ' + text + '\n');
+        });
+      }
     } catch(err) {
       console.log(err);
       res.sendStatus(500);
