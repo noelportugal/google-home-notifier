@@ -34,9 +34,11 @@ Endpoints:
     http://192.168.1.20:8091/google-home-notifier
     https://xxxxx.ngrok.io/google-home-notifier
 GET example:
-curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=Hello+Google+Home
+curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=Hello+Google+Home  - to play given text
+curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=http%3A%2F%2Fdomain%2Ffile.mp3 - to play from given url
 POST example:
-curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier
+curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier - to play given text
+curl -X POST -d "http://domain/file.mp3" https://xxxxx.ngrok.io/google-home-notifier - to play from given url
 
 ```
 #### Raspberry Pi
