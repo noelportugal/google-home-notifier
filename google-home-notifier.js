@@ -6,20 +6,24 @@ var deviceAddress;
 var language;
 
 var device = function(name, lang = 'en') {
-  device = name;
-  language = lang;
-  return this;
+    device = name;
+    language = lang;
+    return this;
 };
 
-var ip = function(ip, lang = 'en') {
+var ip = function(ip) {
   deviceAddress = ip;
-  language = lang;
   return this;
 }
 
 var googletts = require('google-tts-api');
+var googlettsaccent = 'us';
+var accent = function(accent) {
+  googlettsaccent = accent;
+  return this;
+}
 
-var notify = function(message, callback = function() {}) {
+var notify = function(message, callback) {
   if (!deviceAddress){
     browser.start();
     browser.on('serviceUp', function(service) {
@@ -39,8 +43,8 @@ var notify = function(message, callback = function() {}) {
   }
 };
 
-var play = function(mp3_url, callback = function() {}) {
-  if (!deviceAddress) {
+var play = function(mp3_url, callback) {
+  if (!deviceAddress){
     browser.start();
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
@@ -52,7 +56,7 @@ var play = function(mp3_url, callback = function() {}) {
       }
       browser.stop();
     });
-  } else {
+  }else {
     getPlayUrl(mp3_url, deviceAddress, function(res) {
       callback(res);
     });
@@ -60,8 +64,7 @@ var play = function(mp3_url, callback = function() {}) {
 };
 
 var getSpeechUrl = function(text, host, callback) {
-  googletts(text, language, 1).then(function (url) {
-console.log(url);
+  googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
     onDeviceUp(host, url, function(res){
       callback(res)
     });
@@ -71,9 +74,9 @@ console.log(url);
 };
 
 var getPlayUrl = function(url, host, callback) {
-  onDeviceUp(host, url, function(res){
-    callback(res)
-  });
+    onDeviceUp(host, url, function(res){
+      callback(res)
+    });
 };
 
 var onDeviceUp = function(host, url, callback) {
@@ -102,5 +105,6 @@ var onDeviceUp = function(host, url, callback) {
 
 exports.ip = ip;
 exports.device = device;
+exports.accent = accent;
 exports.notify = notify;
 exports.play = play;
