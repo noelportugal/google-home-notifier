@@ -11,8 +11,9 @@ var device = function(name, lang = 'en') {
     return this;
 };
 
-var ip = function(ip) {
+var ip = function(ip, lang = 'en') {
   deviceAddress = ip;
+  language = lang;
   return this;
 }
 
