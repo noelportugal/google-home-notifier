@@ -27,6 +27,7 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   }
 
   googlehome.ip(ip, language);
+  googlehome.device(deviceName,language);
 
   if (text){
     try {
@@ -68,6 +69,7 @@ app.get('/google-home-notifier', function (req, res) {
   }
 
   googlehome.ip(ip, language);
+  googlehome.device(deviceName,language);
 
   if (text) {
     try {
