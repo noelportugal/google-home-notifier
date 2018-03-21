@@ -42,7 +42,7 @@ curl -X POST -d "http://domain/file.mp3" https://xxxxx.ngrok.io/google-home-noti
 
 ```
 #### Raspberry Pi
-If you are running from Raspberry Pi make sure you have the following before nunning "npm install":
+If you are running from Raspberry Pi make sure you have the following before running "npm install":
 Use the latest nodejs dist.
 ```sh
 curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
