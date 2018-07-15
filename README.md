@@ -15,6 +15,9 @@ googlehome.device('Google Home', language); // Change to your Google Home name
 // or if you know your Google Home IP
 // googlehome.ip('192.168.1.20', language);
 
+// if you want to change volume level of notification. from 0.0 to 1.0.
+// googlehome.volume(0.6)
+
 googlehome.notify('Hey Foo', function(res) {
   console.log(res);
 });
