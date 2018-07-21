@@ -35,12 +35,12 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
         var mp3_url = text;
         googlehome.play(mp3_url, function(notifyRes) {
           console.log(notifyRes);
-          res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
+          res.send(deviceName + ' finished to play sound from url: ' + mp3_url + '\n');
         });
       } else {
         googlehome.notify(text, function(notifyRes) {
           console.log(notifyRes);
-          res.send(deviceName + ' will say: ' + text + '\n');
+          res.send(deviceName + ' finished to say: ' + text + '\n');
         });
       }
     } catch(err) {
@@ -77,12 +77,12 @@ app.get('/google-home-notifier', function (req, res) {
         var mp3_url = text;
         googlehome.play(mp3_url, function(notifyRes) {
           console.log(notifyRes);
-          res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
+          res.send(deviceName + ' finished to play sound from url: ' + mp3_url + '\n');
         });
       } else {
         googlehome.notify(text, function(notifyRes) {
           console.log(notifyRes);
-          res.send(deviceName + ' will say: ' + text + '\n');
+          res.send(deviceName + ' finished to say: ' + text + '\n');
         });
       }
     } catch(err) {

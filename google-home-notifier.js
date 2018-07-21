@@ -1,9 +1,15 @@
 var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
-var browser = mdns.createBrowser(mdns.tcp('googlecast'));
+var sequence = [
+    mdns.rst.DNSServiceResolve(),
+    'DNSServiceGetAddrInfo' in mdns.dns_sd ? mdns.rst.DNSServiceGetAddrInfo() : mdns.rst.getaddrinfo({families:[4]}),
+    mdns.rst.makeAddressesUnique()
+];
+var browser = mdns.createBrowser(mdns.tcp('googlecast'), {resolverSequence: sequence});
 var deviceAddress;
 var language;
+var volume;
 
 var device = function(name, lang = 'en') {
     device = name;
@@ -15,6 +21,12 @@ var ip = function(ip, lang = 'en') {
   deviceAddress = ip;
   language = lang;
   return this;
+}
+
+var volume = function(newVolume) {
+  if (0.0 <= newVolume && newVolume <= 1.0) {
+    volume = newVolume;
+  }
 }
 
 var googletts = require('google-tts-api');
@@ -82,7 +94,29 @@ var getPlayUrl = function(url, host, callback) {
 
 var onDeviceUp = function(host, url, callback) {
   var client = new Client();
+  var orgVolume;
+
+  var closeClient = function() {
+    if (orgVolume) {
+      client.setVolume(orgVolume, function() {
+        client.close();
+      });
+    } else {
+      client.close();
+    }
+  };
+
   client.connect(host, function() {
+    // Save current volume level
+    if (volume) {
+      client.getVolume(function(err, vol) {
+        orgVolume = vol;
+
+        client.setVolume({level: volume}, function(err, vol) {
+        });
+      });
+    }
+
     client.launch(DefaultMediaReceiver, function(err, player) {
 
       var media = {
@@ -90,16 +124,34 @@ var onDeviceUp = function(host, url, callback) {
         contentType: 'audio/mp3',
         streamType: 'BUFFERED' // or LIVE
       };
+
       player.load(media, { autoplay: true }, function(err, status) {
-        client.close();
-        callback('Device notified');
+        if (err) {
+          console.log('Error: %s', err.message);
+          closeClient();
+          callback('error');
+        }
+
+        player.on('status', function(status) {
+          switch(status.playerState) {
+          case 'BUFFERING':
+          case 'PLAYING':
+            break; // do nothing
+          default:
+            // Finished. Restore volume level.
+            closeClient();
+
+            callback('Device notified');
+            break;
+          }
+        });
       });
     });
   });
 
   client.on('error', function(err) {
     console.log('Error: %s', err.message);
-    client.close();
+    closeClient();
     callback('error');
   });
 };
@@ -107,5 +159,6 @@ var onDeviceUp = function(host, url, callback) {
 exports.ip = ip;
 exports.device = device;
 exports.accent = accent;
+exports.volume = volume;
 exports.notify = notify;
 exports.play = play;
