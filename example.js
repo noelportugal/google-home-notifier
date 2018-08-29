@@ -50,7 +50,7 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
       res.send(err);
     }
   }else{
-    res.send('Please GET "text=Hello Google Home"');
+    res.send('Please POST "text=Hello Google Home"');
   }
 })
 
