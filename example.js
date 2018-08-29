@@ -103,7 +103,7 @@ app.listen(serverPort, function () {
       return;
     }
     console.log('Endpoints:');
-    console.log('    http://' + ip + ':' + serverPort + '/google-home-notifier');
+    console.log('    http://localhost:' + serverPort + '/google-home-notifier');
     console.log('    ' + url + '/google-home-notifier');
     console.log('GET example:');
     console.log('curl -X GET ' + url + '/google-home-notifier?text=Hello+Google+Home');
