@@ -17,13 +17,13 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   
   var text = req.body.text;
   
-  if (req.query.ip) {
-     ip = req.query.ip;
+  if (req.body.ip) {
+     ip = req.body.ip;
   }
 
   var language = 'pl'; // default language code
-  if (req.query.language) {
-    language;
+  if (req.body.language) {
+    language = req.body.language;
   }
 
   googlehome.ip(ip, language);
@@ -66,7 +66,7 @@ app.get('/google-home-notifier', function (req, res) {
 
   var language = 'pl'; // default language code
   if (req.query.language) {
-    language;
+    language = req.query.language;
   }
 
   googlehome.ip(ip, language);
