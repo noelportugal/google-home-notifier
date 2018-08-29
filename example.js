@@ -96,7 +96,12 @@ app.get('/google-home-notifier', function (req, res) {
 })
 
 app.listen(serverPort, function () {
-  ngrok.connect(serverPort, function (err, url) {
+  ngrok.connect({configPath: '/home/pi/.ngrok2/ngrok.yml', addr: serverPort}, function (err, url) {
+    if (err) {
+      console.log('ngrok.connect failed');
+      console.log(err);
+      return;
+    }
     console.log('Endpoints:');
     console.log('    http://' + ip + ':' + serverPort + '/google-home-notifier');
     console.log('    ' + url + '/google-home-notifier');
