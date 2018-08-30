@@ -1,7 +1,15 @@
 var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
-var browser = mdns.createBrowser(mdns.tcp('googlecast'));
+var sequence = [
+  mdns.rst.DNSServiceResolve(),
+  'DNSServiceGetAddrInfo' in mdns.dns_sd ?
+    mdns.rst.DNSServiceGetAddrInfo() :
+      mdns.rst.getaddrinfo({families:[4]}),
+      mdns.rst.makeAddressesUnique()
+];
+var browser = mdns.createBrowser(mdns.tcp('googlecast'),
+    {resolverSequence: sequence});
 var deviceAddress;
 var language;
 
@@ -27,6 +35,11 @@ var accent = function(accent) {
 var notify = function(message, callback) {
   if (!deviceAddress){
     browser.start();
+    browser.on('error', function(err) {
+        console.log(err);
+        browser.stop();
+        callback();
+    });
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
       if (service.name.includes(device.replace(' ', '-'))){
@@ -47,6 +60,11 @@ var notify = function(message, callback) {
 var play = function(mp3_url, callback) {
   if (!deviceAddress){
     browser.start();
+    browser.on('error', function(err) {
+        console.log(err);
+        browser.stop();
+        callback();
+    });
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
       if (service.name.includes(device.replace(' ', '-'))){

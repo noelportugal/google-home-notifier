@@ -35,11 +35,19 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
       if (text.startsWith('http')){
         var mp3_url = text;
         googlehome.play(mp3_url, function(notifyRes) {
+          if (!notifyRes) {
+            res.send(deviceName + ' cannot play sound.\n');
+            return;
+          }
           console.log(notifyRes);
           res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
         });
       } else {
         googlehome.notify(text, function(notifyRes) {
+          if (!notifyRes) {
+            res.send(deviceName + ' cannot say text.\n');
+            return;
+          }
           console.log(notifyRes);
           res.send(deviceName + ' will say: ' + text + '\n');
         });
@@ -78,11 +86,19 @@ app.get('/google-home-notifier', function (req, res) {
       if (text.startsWith('http')){
         var mp3_url = text;
         googlehome.play(mp3_url, function(notifyRes) {
+          if (!notifyRes) {
+            res.send(deviceName + ' cannot play sound.\n');
+            return;
+          }
           console.log(notifyRes);
           res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
         });
       } else {
         googlehome.notify(text, function(notifyRes) {
+          if (!notifyRes) {
+            res.send(deviceName + ' cannot say text.\n');
+            return;
+          }
           console.log(notifyRes);
           res.send(deviceName + ' will say: ' + text + '\n');
         });
