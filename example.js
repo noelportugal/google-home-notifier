@@ -26,6 +26,9 @@ app.post('/google-home-notifier', urlencodedParser, function (req, res) {
   if (req.body.language) {
     language = req.body.language;
   }
+  if (req.body.timeout) {
+    googlehome.timeout(Number(req.body.timeout));
+  }
 
   googlehome.ip(ip, language);
   googlehome.device(deviceName,language);
@@ -76,6 +79,9 @@ app.get('/google-home-notifier', function (req, res) {
   var language = 'pl'; // default language code
   if (req.query.language) {
     language = req.query.language;
+  }
+  if (req.query.timeout) {
+    googlehome.timeout(Number(req.query.timeout));
   }
 
   googlehome.ip(ip, language);
