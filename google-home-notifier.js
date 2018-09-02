@@ -1,15 +1,7 @@
 var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
-var sequence = [
-  mdns.rst.DNSServiceResolve(),
-  'DNSServiceGetAddrInfo' in mdns.dns_sd ?
-    mdns.rst.DNSServiceGetAddrInfo() :
-      mdns.rst.getaddrinfo({families:[4]}),
-      mdns.rst.makeAddressesUnique()
-];
-var browser = mdns.createBrowser(mdns.tcp('googlecast'),
-    {resolverSequence: sequence});
+var browser;
 var deviceAddress;
 var language;
 var ttsTimeout = 1000;
@@ -38,8 +30,21 @@ var accent = function(accent) {
   return this;
 }
 
+var createMdnsBrowser = function() {
+  var sequence = [
+    mdns.rst.DNSServiceResolve(),
+    'DNSServiceGetAddrInfo' in mdns.dns_sd ?
+      mdns.rst.DNSServiceGetAddrInfo() :
+        mdns.rst.getaddrinfo({families:[4]}),
+        mdns.rst.makeAddressesUnique()
+  ];
+  return mdns.createBrowser(mdns.tcp('googlecast'),
+    {resolverSequence: sequence});
+};
+
 var notify = function(message, callback) {
   if (!deviceAddress){
+    browser = createMdnsBrowser();
     browser.start();
     browser.on('error', function(err) {
         console.log(err);
@@ -53,6 +58,8 @@ var notify = function(message, callback) {
         getSpeechUrl(message, deviceAddress, function(res) {
           callback(res);
         });
+      } else {
+        callback();
       }
       browser.stop();
     });
@@ -65,6 +72,7 @@ var notify = function(message, callback) {
 
 var play = function(mp3_url, callback) {
   if (!deviceAddress){
+    browser = createMdnsBrowser();
     browser.start();
     browser.on('error', function(err) {
         console.log(err);
@@ -78,6 +86,8 @@ var play = function(mp3_url, callback) {
         getPlayUrl(mp3_url, deviceAddress, function(res) {
           callback(res);
         });
+      } else {
+        callback();
       }
       browser.stop();
     });
