@@ -2,12 +2,13 @@ var Client = require('castv2-client').Client;
 var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
 var mdns = require('mdns');
 var browser;
+var deviceName;
 var deviceAddress;
 var language;
 var ttsTimeout = 1000;
 
 var device = function(name, lang = 'en') {
-    device = name;
+    deviceName = name;
     language = lang;
     return this;
 };
@@ -43,6 +44,11 @@ var createMdnsBrowser = function() {
 };
 
 var notify = function(message, callback) {
+  if (!deviceName) {
+    console.log('deviceName should be supplied before notify');
+    callback();
+    return;
+  }
   if (!deviceAddress){
     browser = createMdnsBrowser();
     browser.start();
@@ -53,7 +59,7 @@ var notify = function(message, callback) {
     });
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
+      if (service.name.includes(deviceName.replace(' ', '-'))){
         deviceAddress = service.addresses[0];
         getSpeechUrl(message, deviceAddress, function(res) {
           callback(res);
@@ -71,6 +77,11 @@ var notify = function(message, callback) {
 };
 
 var play = function(mp3_url, callback) {
+  if (!deviceName) {
+    console.log('deviceName should be supplied before play');
+    callback();
+    return;
+  }
   if (!deviceAddress){
     browser = createMdnsBrowser();
     browser.start();
@@ -81,7 +92,7 @@ var play = function(mp3_url, callback) {
     });
     browser.on('serviceUp', function(service) {
       console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
+      if (service.name.includes(deviceName.replace(' ', '-'))){
         deviceAddress = service.addresses[0];
         getPlayUrl(mp3_url, deviceAddress, function(res) {
           callback(res);
