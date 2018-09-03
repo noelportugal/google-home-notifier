@@ -1,7 +1,6 @@
 var express = require('express');
 var googlehome = require('./google-home-notifier');
 var ngrok = require('ngrok');
-var exitHook = require('exit-hook');
 var bodyParser = require('body-parser');
 var app = express();
 const serverPort = 8091; // default port
@@ -137,6 +136,3 @@ app.listen(serverPort, function () {
   });
 })
 
-exitHook(() => {
-  ngrok.disconnect();
-});
