@@ -17,7 +17,7 @@
     "body-parser": "^1.15.2",
     "castv2-client": "^1.1.2",
     "express": "^4.14.0",
-    "google-tts-api": "0.0.2",
+    "google-tts-api": "0.0.3",
     "mdns": "^2.3.3",
     "ngrok": "^2.2.4"
   }
