@@ -101,8 +101,8 @@ app.listen(serverPort, function () {
     console.log('    http://' + ip + ':' + serverPort + '/google-home-notifier');
     console.log('    ' + url + '/google-home-notifier');
     console.log('GET example:');
-    console.log('curl -X GET ' + url + '/google-home-notifier?text=Hello+Google+Home');
-	console.log('POST example:');
-	console.log('curl -X POST -d "text=Hello Google Home" ' + url + '/google-home-notifier');
+    console.log('curl -X GET "' + url + '/google-home-notifier?text=Hello+Google+Home"');
+    console.log('POST example:');
+    console.log('curl -X POST -d "text=Hello Google Home" "' + url + '/google-home-notifier"');
   });
 })
