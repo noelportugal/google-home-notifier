@@ -37,6 +37,7 @@ var accent = function(accent) {
 }
 
 var notify = function(message, callback) {
+console.log('notify');
   if (!deviceAddress){
     browser.start();
     browser.on('serviceUp', function(service) {
@@ -44,19 +45,20 @@ var notify = function(message, callback) {
       if (service.name.includes(device.replace(' ', '-'))){
         deviceAddress = service.addresses[0];
         getSpeechUrl(message, deviceAddress, function(res) {
-          callback(res);
+          callback && callback(res);
         });
       }
       browser.stop();
     });
   }else {
     getSpeechUrl(message, deviceAddress, function(res) {
-      callback(res);
+      callback && callback(res);
     });
   }
 };
 
 var play = function(mp3_url, callback) {
+console.log('play');
   if (!deviceAddress){
     browser.start();
     browser.on('serviceUp', function(service) {
@@ -64,14 +66,14 @@ var play = function(mp3_url, callback) {
       if (service.name.includes(device.replace(' ', '-'))){
         deviceAddress = service.addresses[0];
         getPlayUrl(mp3_url, deviceAddress, function(res) {
-          callback(res);
+          callback && callback(res);
         });
       }
       browser.stop();
     });
   }else {
     getPlayUrl(mp3_url, deviceAddress, function(res) {
-      callback(res);
+      callback && callback(res);
     });
   }
 };
@@ -79,30 +81,36 @@ var play = function(mp3_url, callback) {
 var getSpeechUrl = function(text, host, callback) {
   googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
     onDeviceUp(host, url, function(res){
-      callback(res)
+      callback && callback(res);
     });
   }).catch(function (err) {
     console.error(err.stack);
+    callback && callback('error');
   });
 };
 
 var getPlayUrl = function(url, host, callback) {
+console.log('getPlayUrl');
     onDeviceUp(host, url, function(res){
-      callback(res)
+      callback && callback(res);
     });
 };
 
 var onDeviceUp = function(host, url, callback) {
+console.log('onDeviceUp');
   var client = new Client();
   var orgVolume;
 
-  var closeClient = function() {
-    if (orgVolume) {
+  var closeClient = function(cb) {
+console.error('closeClient');
+    if (orgVolume != null) {
       client.setVolume(orgVolume, function() {
         client.close();
+        cb && cb();
       });
     } else {
       client.close();
+      cb && cb();
     }
   };
 
@@ -117,6 +125,7 @@ var onDeviceUp = function(host, url, callback) {
       });
     }
 
+console.error('launch');
     client.launch(DefaultMediaReceiver, function(err, player) {
 
       var media = {
@@ -125,11 +134,15 @@ var onDeviceUp = function(host, url, callback) {
         streamType: 'BUFFERED' // or LIVE
       };
 
+console.error('load');
       player.load(media, { autoplay: true }, function(err, status) {
+console.error('load callback');
         if (err) {
           console.log('Error: %s', err.message);
-          closeClient();
-          callback('error');
+console.dir(err);
+          closeClient(function() {
+            callback && callback('error');
+	  });
         }
 
         player.on('status', function(status) {
@@ -139,9 +152,9 @@ var onDeviceUp = function(host, url, callback) {
             break; // do nothing
           default:
             // Finished. Restore volume level.
-            closeClient();
-
-            callback('Device notified');
+            closeClient(function() {
+              callback && callback('Device notified');
+            });
             break;
           }
         });
@@ -151,8 +164,9 @@ var onDeviceUp = function(host, url, callback) {
 
   client.on('error', function(err) {
     console.log('Error: %s', err.message);
-    closeClient();
-    callback('error');
+    closeClient(function() {
+      callback && callback('error');
+    });
   });
 };
 
