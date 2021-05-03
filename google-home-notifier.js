@@ -79,13 +79,10 @@ console.log('play');
 };
 
 var getSpeechUrl = function(text, host, callback) {
-  googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
-    onDeviceUp(host, url, function(res){
-      callback && callback(res);
-    });
-  }).catch(function (err) {
-    console.error(err.stack);
-    callback && callback('error');
+  const url = googletts.getAudioUrl(text, { lang: language });
+
+  onDeviceUp(host, url, function(res){
+    callback && callback(res);
   });
 };
 
