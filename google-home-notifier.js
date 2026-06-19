@@ -22,6 +22,8 @@ let deviceName = null
 let deviceAddress = null
 let language = 'en'
 let ttsHost = 'https://translate.google.com'
+let volumeLevel = null   // null = leave device volume untouched
+let slowSpeech = false
 
 // --- pure helpers (exported for testing) ----------------------------------
 
@@ -92,7 +94,7 @@ function getSpeechUrl(text) {
   if (String(text).length > 200) {
     throw new Error('Text is too long for a single TTS request (max 200 characters)')
   }
-  return googleTTS.getAudioUrl(text, { lang: language, slow: false, host: ttsHost })
+  return googleTTS.getAudioUrl(text, { lang: language, slow: slowSpeech, host: ttsHost })
 }
 
 /** Connect to the device and play a media URL. Resolves with a status string. */
@@ -100,21 +102,42 @@ function castMedia(host, url) {
   return new Promise((resolve, reject) => {
     const client = new Client()
     let settled = false
+    let priorVolume = null   // restored after playback if we changed it
+
     const finish = (fn) => {
       if (settled) return
       settled = true
-      try { client.close() } catch { /* noop */ }
-      fn()
+      const close = () => { try { client.close() } catch { /* noop */ } finish.done = true; fn() }
+      if (priorVolume != null) client.setVolume(priorVolume, close)
+      else close()
     }
+
     client.on('error', (err) => finish(() => reject(err)))
-    client.connect(host, () => {
+
+    const launch = () => {
       client.launch(DefaultMediaReceiver, (err, player) => {
         if (err) return finish(() => reject(err))
         const media = { contentId: url, contentType: 'audio/mp3', streamType: 'BUFFERED' }
         player.load(media, { autoplay: true }, (loadErr) => {
           if (loadErr) return finish(() => reject(loadErr))
-          finish(() => resolve('Device notified'))
+          // If we changed the volume, wait for playback to finish so we can
+          // restore it; otherwise resolve immediately (original 1.x behavior).
+          if (priorVolume == null) return finish(() => resolve('Device notified'))
+          let started = false
+          player.on('status', (status) => {
+            if (status.playerState === 'PLAYING' || status.playerState === 'BUFFERING') started = true
+            else if (started && status.playerState === 'IDLE') finish(() => resolve('Device notified'))
+          })
         })
+      })
+    }
+
+    client.connect(host, () => {
+      if (volumeLevel == null) return launch()
+      // Save current volume, set the requested level, then play.
+      client.getVolume((err, vol) => {
+        if (!err && vol) priorVolume = vol
+        client.setVolume({ level: volumeLevel }, () => launch())
       })
     })
   })
@@ -147,6 +170,19 @@ api.ip = function ip(address, lang = 'en') {
 
 api.accent = function accent(code) {
   ttsHost = accentToHost(code)
+  return api
+}
+
+/** Set notification volume (0.0–1.0). The prior device volume is restored after. */
+api.volume = function volume(level) {
+  const n = Number(level)
+  if (Number.isFinite(n) && n >= 0 && n <= 1) volumeLevel = n
+  return api
+}
+
+/** Toggle slower TTS speech (default: normal speed). */
+api.slow = function slow(enabled = true) {
+  slowSpeech = !!enabled
   return api
 }
 

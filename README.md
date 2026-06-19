@@ -6,7 +6,8 @@ Send text-to-speech notifications — or play an MP3 — on your **Google Home /
 > [`bonjour-service`](https://www.npmjs.com/package/bonjour-service) — **no more
 > native `mdns` build**, no avahi system packages, no patching `node_modules`.
 > `notify()`/`play()` now return Promises (so you can `await` them) while the old
-> callback style keeps working unchanged. Upgraded to `google-tts-api` 2.x.
+> callback style keeps working unchanged. Upgraded to `google-tts-api` 2.x. New
+> `volume()` and `slow()` controls.
 
 ## Why this still exists in 2026
 
@@ -53,6 +54,14 @@ googlehome.accent('co.uk');               // 'us' (default), 'co.uk', 'com.au', 
 await googlehome.notify('Right, then');
 ```
 
+### Volume & speech rate
+
+```javascript
+googlehome.volume(0.6);   // 0.0–1.0; the device's prior volume is restored afterwards
+googlehome.slow(true);    // slower TTS (default: normal speed)
+await googlehome.notify('Dinner is ready');
+```
+
 ### Play an MP3
 
 ```javascript
@@ -68,6 +77,8 @@ await googlehome.play('http://example.com/sound.mp3');
 | `device(name, lang?)` | Target a device by (fuzzy) name. Chainable. |
 | `ip(address, lang?)` | Target a device by IP, skipping discovery. Chainable. |
 | `accent(code)` | TTS accent/host (`us`, `co.uk`, `com.au`, … or a full URL). Chainable. |
+| `volume(level)` | Notification volume `0.0`–`1.0`; prior device volume restored after. Chainable. |
+| `slow(enabled?)` | Slower TTS speech (default normal). Chainable. |
 | `notify(text, cb?)` | Speak `text`. Returns a `Promise<string>`; `cb(result)` / `cb('error', err)` still work. |
 | `play(url, cb?)` | Play an MP3 `url`. Same return/callback contract as `notify`. |
 

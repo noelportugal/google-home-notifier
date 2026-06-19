@@ -40,8 +40,17 @@ test('setters are chainable and return the api', () => {
   assert.equal(gh.device('Test'), gh)
   assert.equal(gh.ip('192.168.1.1'), gh)
   assert.equal(gh.accent('us'), gh)
-  for (const fn of ['device', 'ip', 'accent', 'notify', 'play']) {
+  assert.equal(gh.volume(0.5), gh)
+  assert.equal(gh.slow(), gh)
+  for (const fn of ['device', 'ip', 'accent', 'volume', 'slow', 'notify', 'play']) {
     assert.equal(typeof gh[fn], 'function', `${fn} should be a function`)
+  }
+})
+
+test('volume() ignores out-of-range / invalid values (stays chainable)', () => {
+  // valid range and junk both return the api; invalid values are simply ignored
+  for (const v of [0, 0.6, 1, -1, 2, NaN, 'loud', null]) {
+    assert.equal(gh.volume(v), gh)
   }
 })
 
