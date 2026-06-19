@@ -7,7 +7,7 @@
 
 const express = require('express')
 const ngrok = require('ngrok')
-const googlehome = require('./google-home-notifier')
+const googlehome = require('./src/index.js')
 
 const app = express()
 const serverPort = 8091

@@ -4,7 +4,7 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('path')
 
-const MODULE = path.join(__dirname, '..', 'google-home-notifier.js')
+const MODULE = path.join(__dirname, '..', 'src', 'index.js')
 function fresh() {
   delete require.cache[require.resolve(MODULE)]
   return require(MODULE)

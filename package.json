@@ -2,8 +2,8 @@
   "name": "google-home-notifier",
   "version": "1.4.0",
   "description": "Send text-to-speech notifications (or play an MP3) on your Google Home / Nest speakers.",
-  "main": "google-home-notifier.js",
-  "types": "google-home-notifier.d.ts",
+  "main": "src/index.js",
+  "types": "src/index.d.ts",
   "scripts": {
     "test": "node --test"
   },
@@ -30,6 +30,7 @@
     "node": ">=14"
   },
   "files": [
+    "src/",
     "google-home-notifier.js",
     "google-home-notifier.d.ts",
     "example.js"
