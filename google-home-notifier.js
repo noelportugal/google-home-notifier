@@ -18,8 +18,7 @@ const { Client, DefaultMediaReceiver } = require('castv2-client')
 const googleTTS = require('google-tts-api')
 const { Bonjour } = require('bonjour-service')
 
-let deviceName = null
-let deviceAddress = null
+let targets = []         // [{ name?, address?, _address? }] — one or many devices
 let language = 'en'
 let ttsHost = 'https://translate.google.com'
 let volumeLevel = null   // null = leave device volume untouched
@@ -81,11 +80,41 @@ function findDevice(name, timeoutMs = 10000) {
   })
 }
 
-async function resolveAddress() {
-  if (deviceAddress) return deviceAddress
-  if (!deviceName) throw new Error('No device set — call device(name) or ip(address) first')
-  deviceAddress = await findDevice(deviceName)
-  return deviceAddress
+/** Resolve a single target to an IP (cached on the target), discovering by name if needed. */
+async function resolveTarget(t) {
+  if (t.address) return t.address
+  if (t._address) return t._address
+  t._address = await findDevice(t.name)
+  return t._address
+}
+
+/** Label for a target, for multi-device result reporting. */
+function targetLabel(t) {
+  return t.name || t.address || 'device'
+}
+
+/**
+ * Fan a media URL out to every configured target.
+ *  - single target: resolves with the status string and rejects on failure (1.x behavior)
+ *  - multiple targets: resolves with an array of { device, result }/{ device, error }
+ *    using allSettled, so one offline speaker never blocks the others.
+ */
+async function broadcast(url) {
+  if (!targets.length) {
+    throw new Error('No device set — call device(name)/ip(address) or devices([...])/ips([...]) first')
+  }
+  if (targets.length === 1) {
+    const host = await resolveTarget(targets[0])
+    return castMedia(host, url)
+  }
+  const settled = await Promise.allSettled(
+    targets.map(async (t) => castMedia(await resolveTarget(t), url))
+  )
+  return settled.map((r, i) => (
+    r.status === 'fulfilled'
+      ? { device: targetLabel(targets[i]), result: r.value }
+      : { device: targetLabel(targets[i]), error: r.reason && r.reason.message }
+  ))
 }
 
 // --- TTS + cast -----------------------------------------------------------
@@ -156,14 +185,29 @@ function dualReturn(promise, callback) {
 const api = {}
 
 api.device = function device(name, lang = 'en') {
-  deviceName = name
-  deviceAddress = null   // a new name invalidates any cached address
+  targets = [{ name }]
   language = lang
   return api
 }
 
 api.ip = function ip(address, lang = 'en') {
-  deviceAddress = address
+  targets = [{ address }]
+  language = lang
+  return api
+}
+
+/** Target several devices by name; notify/play fan out to all of them. */
+api.devices = function devices(names, lang = 'en') {
+  if (!Array.isArray(names)) throw new TypeError('devices(names) expects an array of device names')
+  targets = names.map((name) => ({ name }))
+  language = lang
+  return api
+}
+
+/** Target several devices by IP; notify/play fan out to all of them. */
+api.ips = function ips(addresses, lang = 'en') {
+  if (!Array.isArray(addresses)) throw new TypeError('ips(addresses) expects an array of IP addresses')
+  targets = addresses.map((address) => ({ address }))
   language = lang
   return api
 }
@@ -187,18 +231,12 @@ api.slow = function slow(enabled = true) {
 }
 
 api.notify = function notify(message, callback) {
-  const p = (async () => {
-    const host = await resolveAddress()
-    return castMedia(host, getSpeechUrl(message))
-  })()
+  const p = (async () => broadcast(getSpeechUrl(message)))()
   return dualReturn(p, callback)
 }
 
 api.play = function play(mp3Url, callback) {
-  const p = (async () => {
-    const host = await resolveAddress()
-    return castMedia(host, mp3Url)
-  })()
+  const p = (async () => broadcast(mp3Url))()
   return dualReturn(p, callback)
 }
 

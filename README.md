@@ -54,6 +54,20 @@ googlehome.accent('co.uk');               // 'us' (default), 'co.uk', 'com.au', 
 await googlehome.notify('Right, then');
 ```
 
+### Multiple devices
+
+```javascript
+googlehome.devices(['Living Room', 'Kitchen', 'Office']);   // by name
+// or: googlehome.ips(['192.168.1.20', '192.168.1.21']);
+
+const results = await googlehome.notify('Dinner is ready');
+// → [ { device: 'Living Room', result: 'Device notified' },
+//     { device: 'Kitchen',    result: 'Device notified' },
+//     { device: 'Office',     error: '...' } ]   // one offline speaker won't block the rest
+```
+
+With a single device (`device()`/`ip()`) the result is just the status string, as before.
+
 ### Volume & speech rate
 
 ```javascript
@@ -76,6 +90,8 @@ await googlehome.play('http://example.com/sound.mp3');
 | --- | --- |
 | `device(name, lang?)` | Target a device by (fuzzy) name. Chainable. |
 | `ip(address, lang?)` | Target a device by IP, skipping discovery. Chainable. |
+| `devices(names, lang?)` | Target several devices by name; `notify`/`play` fan out to all. Chainable. |
+| `ips(addresses, lang?)` | Target several devices by IP; `notify`/`play` fan out to all. Chainable. |
 | `accent(code)` | TTS accent/host (`us`, `co.uk`, `com.au`, … or a full URL). Chainable. |
 | `volume(level)` | Notification volume `0.0`–`1.0`; prior device volume restored after. Chainable. |
 | `slow(enabled?)` | Slower TTS speech (default normal). Chainable. |

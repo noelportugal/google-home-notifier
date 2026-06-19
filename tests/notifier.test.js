@@ -47,6 +47,18 @@ test('setters are chainable and return the api', () => {
   }
 })
 
+test('devices()/ips() are chainable and validate their input', () => {
+  assert.equal(gh.devices(['Living Room', 'Kitchen']), gh)
+  assert.equal(gh.ips(['192.168.1.20', '192.168.1.21']), gh)
+  assert.throws(() => gh.devices('not-an-array'), /expects an array/)
+  assert.throws(() => gh.ips('192.168.1.20'), /expects an array/)
+})
+
+test('notify still rejects when no targets are set', async () => {
+  const g = fresh()
+  await assert.rejects(() => g.notify('hi'), /No device set/)
+})
+
 test('volume() ignores out-of-range / invalid values (stays chainable)', () => {
   // valid range and junk both return the api; invalid values are simply ignored
   for (const v of [0, 0.6, 1, -1, 2, NaN, 'loud', null]) {
