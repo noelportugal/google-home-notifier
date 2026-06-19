@@ -1,108 +1,64 @@
-var express = require('express');
-var googlehome = require('./google-home-notifier');
-var ngrok = require('ngrok');
-var bodyParser = require('body-parser');
-var app = express();
-const serverPort = 8091; // default port
+'use strict'
 
-var deviceName = 'Google Home';
-var ip = '192.168.1.20'; // default IP
+// Minimal HTTP wrapper around google-home-notifier.
+//   GET  /google-home-notifier?text=Hello+Google+Home
+//   POST /google-home-notifier   (form field: text=Hello Google Home)
+// If `text` starts with http(s) it's treated as an MP3 URL to play.
 
-var urlencodedParser = bodyParser.urlencoded({ extended: false });
+const express = require('express')
+const ngrok = require('ngrok')
+const googlehome = require('./google-home-notifier')
 
-app.post('/google-home-notifier', urlencodedParser, function (req, res) {
-  
-  if (!req.body) return res.sendStatus(400)
-  console.log(req.body);
-  
-  var text = req.body.text;
-  
-  if (req.query.ip) {
-     ip = req.query.ip;
+const app = express()
+const serverPort = 8091
+
+const deviceName = 'Google Home'
+let ip = '192.168.1.20'        // optional: set a fixed IP to skip discovery
+const defaultLanguage = 'en'
+
+app.use(express.urlencoded({ extended: false }))   // replaces body-parser
+
+async function handle(req, res) {
+  const text = (req.body && req.body.text) || req.query.text
+  if (req.query.ip) ip = req.query.ip
+  const language = req.query.language || defaultLanguage
+
+  if (!text) {
+    return res.send('Please pass ?text=Hello+Google+Home\n')
   }
 
-  var language = 'pl'; // default language code
-  if (req.query.language) {
-    language;
-  }
+  // Target by IP when provided (fast, no discovery), else by device name.
+  if (ip) googlehome.ip(ip, language)
+  else googlehome.device(deviceName, language)
 
-  googlehome.ip(ip, language);
-  googlehome.device(deviceName,language);
-
-  if (text){
-    try {
-      if (text.startsWith('http')){
-        var mp3_url = text;
-        googlehome.play(mp3_url, function(notifyRes) {
-          console.log(notifyRes);
-          res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
-        });
-      } else {
-        googlehome.notify(text, function(notifyRes) {
-          console.log(notifyRes);
-          res.send(deviceName + ' will say: ' + text + '\n');
-        });
-      }
-    } catch(err) {
-      console.log(err);
-      res.sendStatus(500);
-      res.send(err);
+  try {
+    if (/^https?:\/\//i.test(text)) {
+      await googlehome.play(text)
+      res.send(`${deviceName} will play sound from url: ${text}\n`)
+    } else {
+      await googlehome.notify(text)
+      res.send(`${deviceName} will say: ${text}\n`)
     }
-  }else{
-    res.send('Please GET "text=Hello Google Home"');
+  } catch (err) {
+    console.error(err)
+    res.status(500).send(`Error: ${err.message}\n`)
   }
-})
+}
 
-app.get('/google-home-notifier', function (req, res) {
+app.get('/google-home-notifier', handle)
+app.post('/google-home-notifier', handle)
 
-  console.log(req.query);
-
-  var text = req.query.text;
-
-  if (req.query.ip) {
-     ip = req.query.ip;
+app.listen(serverPort, async () => {
+  console.log('Endpoints:')
+  console.log(`    http://${ip}:${serverPort}/google-home-notifier`)
+  try {
+    const url = await ngrok.connect(serverPort)
+    console.log(`    ${url}/google-home-notifier`)
+    console.log('GET example:')
+    console.log(`    curl -X GET ${url}/google-home-notifier?text=Hello+Google+Home`)
+    console.log('POST example:')
+    console.log(`    curl -X POST -d "text=Hello Google Home" ${url}/google-home-notifier`)
+  } catch (err) {
+    console.log('(ngrok not started — local endpoint above still works)')
   }
-
-  var language = 'pl'; // default language code
-  if (req.query.language) {
-    language;
-  }
-
-  googlehome.ip(ip, language);
-  googlehome.device(deviceName,language);
-
-  if (text) {
-    try {
-      if (text.startsWith('http')){
-        var mp3_url = text;
-        googlehome.play(mp3_url, function(notifyRes) {
-          console.log(notifyRes);
-          res.send(deviceName + ' will play sound from url: ' + mp3_url + '\n');
-        });
-      } else {
-        googlehome.notify(text, function(notifyRes) {
-          console.log(notifyRes);
-          res.send(deviceName + ' will say: ' + text + '\n');
-        });
-      }
-    } catch(err) {
-      console.log(err);
-      res.sendStatus(500);
-      res.send(err);
-    }
-  }else{
-    res.send('Please GET "text=Hello+Google+Home"');
-  }
-})
-
-app.listen(serverPort, function () {
-  ngrok.connect(serverPort, function (err, url) {
-    console.log('Endpoints:');
-    console.log('    http://' + ip + ':' + serverPort + '/google-home-notifier');
-    console.log('    ' + url + '/google-home-notifier');
-    console.log('GET example:');
-    console.log('curl -X GET ' + url + '/google-home-notifier?text=Hello+Google+Home');
-	console.log('POST example:');
-	console.log('curl -X POST -d "text=Hello Google Home" ' + url + '/google-home-notifier');
-  });
 })
