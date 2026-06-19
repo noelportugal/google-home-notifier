@@ -8,6 +8,17 @@ Send text-to-speech notifications — or play an MP3 — on your **Google Home /
 > `notify()`/`play()` now return Promises (so you can `await` them) while the old
 > callback style keeps working unchanged. Upgraded to `google-tts-api` 2.x.
 
+## Why this still exists in 2026
+
+Google never shipped an official API for "make my speaker say this." The
+[Google Assistant SDK](https://developers.google.com/assistant/sdk/overview) is
+experimental / non-commercial and explicitly **can't broadcast voice messages**;
+the newer [Google Home APIs](https://developers.googleblog.com/en/build-the-future-of-home-with-google-home-apis/)
+are for **device control + automations + Matter**, not media or text-to-speech.
+So casting a generated TTS clip to the speaker — exactly what this library does,
+and what Home Assistant does under the hood — is still the way to do it. This is
+a tiny, dependency-light alternative to running a whole home-automation stack.
+
 ## Installation
 
 ```sh
