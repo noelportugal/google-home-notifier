@@ -68,6 +68,25 @@ const results = await googlehome.notify('Dinner is ready');
 
 With a single device (`device()`/`ip()`) the result is just the status string, as before.
 
+### Discover every device, then announce to all
+
+```javascript
+const list = await googlehome.getDevices();
+// → [ { name: 'Living Room', address: '192.168.1.20', port: 8009 }, … ]
+
+// announce to all of them:
+googlehome.ips(list.map((d) => d.address));
+await googlehome.notify('Good morning!');
+
+// …or loop yourself:
+for (const d of list) {
+  await googlehome.ip(d.address).notify(`Hello from ${d.name}`);
+}
+```
+
+`getDevices(timeoutMs = 3000)` browses the network for the given window and returns
+every Google Cast device it sees (deduped).
+
 ### Volume & speech rate
 
 ```javascript
@@ -90,6 +109,7 @@ await googlehome.play('http://example.com/sound.mp3');
 | --- | --- |
 | `device(name, lang?)` | Target a device by (fuzzy) name. Chainable. |
 | `ip(address, lang?)` | Target a device by IP, skipping discovery. Chainable. |
+| `getDevices(timeoutMs?)` | **Discover all** Cast devices on the network → `Promise<[{name, address, port}]>`. |
 | `devices(names, lang?)` | Target several devices by name; `notify`/`play` fan out to all. Chainable. |
 | `ips(addresses, lang?)` | Target several devices by IP; `notify`/`play` fan out to all. Chainable. |
 | `accent(code)` | TTS accent/host (`us`, `co.uk`, `com.au`, … or a full URL). Chainable. |

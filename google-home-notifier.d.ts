@@ -5,6 +5,8 @@ export interface GoogleHomeNotifier {
   device(name: string, language?: string): GoogleHomeNotifier;
   /** Target a device by IP address (skips discovery). Chainable. */
   ip(address: string, language?: string): GoogleHomeNotifier;
+  /** Discover all Google Cast devices on the network (browse for `timeoutMs`, default 3000). */
+  getDevices(timeoutMs?: number): Promise<Array<{ name: string; address: string; port: number }>>;
   /** Target several devices by name; notify/play fan out to all. Chainable. */
   devices(names: string[], language?: string): GoogleHomeNotifier;
   /** Target several devices by IP; notify/play fan out to all. Chainable. */

@@ -80,6 +80,25 @@ function findDevice(name, timeoutMs = 10000) {
   })
 }
 
+/** Browse for a window and return every Google Cast device found (deduped). */
+function findAllDevices(timeoutMs = 3000) {
+  return new Promise((resolve) => {
+    const bonjour = new Bonjour()
+    const browser = bonjour.find({ type: 'googlecast' })
+    const found = new Map()
+    browser.on('up', (service) => {
+      const address = pickAddress(service)
+      const name = (service.txt && (service.txt.fn || service.txt.n)) || service.name
+      const key = address || name
+      if (key && !found.has(key)) found.set(key, { name, address, port: service.port })
+    })
+    setTimeout(() => {
+      try { browser.stop(); bonjour.destroy() } catch { /* noop */ }
+      resolve([...found.values()])
+    }, timeoutMs)
+  })
+}
+
 /** Resolve a single target to an IP (cached on the target), discovering by name if needed. */
 async function resolveTarget(t) {
   if (t.address) return t.address
@@ -194,6 +213,15 @@ api.ip = function ip(address, lang = 'en') {
   targets = [{ address }]
   language = lang
   return api
+}
+
+/**
+ * Discover all Google Cast devices on the network.
+ * @param {number} [timeoutMs=3000] how long to listen for responses
+ * @returns {Promise<Array<{name: string, address: string, port: number}>>}
+ */
+api.getDevices = function getDevices(timeoutMs) {
+  return findAllDevices(timeoutMs)
 }
 
 /** Target several devices by name; notify/play fan out to all of them. */

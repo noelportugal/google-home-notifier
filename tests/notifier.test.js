@@ -59,6 +59,11 @@ test('notify still rejects when no targets are set', async () => {
   await assert.rejects(() => g.notify('hi'), /No device set/)
 })
 
+test('getDevices resolves an array (empty within a short window)', async () => {
+  const list = await gh.getDevices(150)
+  assert.ok(Array.isArray(list), 'getDevices should resolve an array')
+})
+
 test('volume() ignores out-of-range / invalid values (stays chainable)', () => {
   // valid range and junk both return the api; invalid values are simply ignored
   for (const v of [0, 0.6, 1, -1, 2, NaN, 'loud', null]) {
