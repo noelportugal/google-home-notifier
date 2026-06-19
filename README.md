@@ -118,9 +118,9 @@ await googlehome.play('http://example.com/sound.mp3');
 | `notify(text, cb?)` | Speak `text`. Returns a `Promise<string>`; `cb(result)` / `cb('error', err)` still work. |
 | `play(url, cb?)` | Play an MP3 `url`. Same return/callback contract as `notify`. |
 
-## HTTP listener (example.js)
+## HTTP listener (example/)
 
-`example.js` runs a tiny server so you can trigger notifications over HTTP — handy
+`example/example.js` runs a tiny server so you can trigger notifications over HTTP — handy
 with IFTTT, webhooks, or home automation. It uses [ngrok](https://ngrok.com/) to
 expose the endpoint outside your network.
 
@@ -128,7 +128,7 @@ expose the endpoint outside your network.
 git clone https://github.com/noelportugal/google-home-notifier
 cd google-home-notifier
 npm install
-node example.js
+node example/example.js
 ```
 
 ```
