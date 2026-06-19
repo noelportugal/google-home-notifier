@@ -4,7 +4,7 @@ const { test } = require('node:test')
 const assert = require('node:assert/strict')
 const path = require('path')
 
-const MODULE = path.join(__dirname, '..', 'google-home-notifier.js')
+const MODULE = path.join(__dirname, '..', 'src', 'index.js')
 function fresh() {
   delete require.cache[require.resolve(MODULE)]
   return require(MODULE)
@@ -45,6 +45,23 @@ test('setters are chainable and return the api', () => {
   for (const fn of ['device', 'ip', 'accent', 'volume', 'slow', 'notify', 'play']) {
     assert.equal(typeof gh[fn], 'function', `${fn} should be a function`)
   }
+})
+
+test('devices()/ips() are chainable and validate their input', () => {
+  assert.equal(gh.devices(['Living Room', 'Kitchen']), gh)
+  assert.equal(gh.ips(['192.168.1.20', '192.168.1.21']), gh)
+  assert.throws(() => gh.devices('not-an-array'), /expects an array/)
+  assert.throws(() => gh.ips('192.168.1.20'), /expects an array/)
+})
+
+test('notify still rejects when no targets are set', async () => {
+  const g = fresh()
+  await assert.rejects(() => g.notify('hi'), /No device set/)
+})
+
+test('getDevices resolves an array (empty within a short window)', async () => {
+  const list = await gh.getDevices(150)
+  assert.ok(Array.isArray(list), 'getDevices should resolve an array')
 })
 
 test('volume() ignores out-of-range / invalid values (stays chainable)', () => {
