@@ -1,24 +1,46 @@
 {
   "name": "google-home-notifier",
-  "version": "1.2.0",
-  "description": "",
+  "version": "1.3.0",
+  "description": "Send text-to-speech notifications (or play an MP3) on your Google Home / Nest speakers.",
   "main": "google-home-notifier.js",
+  "types": "google-home-notifier.d.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "node --test"
   },
   "author": "Noel Portugal",
   "keywords": [
     "google home",
+    "google nest",
+    "chromecast",
     "notifications",
-    "notifier"
+    "notifier",
+    "text-to-speech",
+    "tts"
   ],
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/noelportugal/google-home-notifier.git"
+  },
+  "homepage": "https://github.com/noelportugal/google-home-notifier#readme",
+  "bugs": {
+    "url": "https://github.com/noelportugal/google-home-notifier/issues"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "files": [
+    "google-home-notifier.js",
+    "google-home-notifier.d.ts",
+    "example.js"
+  ],
   "dependencies": {
-    "body-parser": "^1.15.2",
-    "castv2-client": "^1.1.2",
-    "express": "^4.14.0",
-    "google-tts-api": "0.0.2",
-    "mdns": "^2.3.3",
-    "ngrok": "^2.2.4"
+    "bonjour-service": "^1.4.1",
+    "castv2-client": "^1.2.0",
+    "google-tts-api": "^2.0.2"
+  },
+  "devDependencies": {
+    "express": "^4.21.2",
+    "ngrok": "^4.3.3"
   }
 }

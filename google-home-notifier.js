@@ -1,111 +1,210 @@
-var Client = require('castv2-client').Client;
-var DefaultMediaReceiver = require('castv2-client').DefaultMediaReceiver;
-var mdns = require('mdns');
-var browser = mdns.createBrowser(mdns.tcp('googlecast'));
-var deviceAddress;
-var language;
+'use strict'
 
-var device = function(name, lang = 'en') {
-    device = name;
-    language = lang;
-    return this;
-};
+/**
+ * google-home-notifier — speak text (or play an MP3) on Google Home / Nest.
+ *
+ * Public API is unchanged from 1.x:
+ *   device(name, lang?) | ip(address, lang?) | accent(code) | notify(text, cb?) | play(url, cb?)
+ *
+ * What's new in this version, without breaking that contract:
+ *   - mDNS discovery uses pure-JS `bonjour-service` (no native `mdns` build).
+ *   - `notify`/`play` now ALSO return a Promise, so you can `await` them.
+ *     Pass a callback and it still works exactly as before: cb(result) on
+ *     success, cb('error', err) on failure.
+ *   - Upgraded to google-tts-api 2.x.
+ */
 
-var ip = function(ip, lang = 'en') {
-  deviceAddress = ip;
-  language = lang;
-  return this;
+const { Client, DefaultMediaReceiver } = require('castv2-client')
+const googleTTS = require('google-tts-api')
+const { Bonjour } = require('bonjour-service')
+
+let deviceName = null
+let deviceAddress = null
+let language = 'en'
+let ttsHost = 'https://translate.google.com'
+let volumeLevel = null   // null = leave device volume untouched
+let slowSpeech = false
+
+// --- pure helpers (exported for testing) ----------------------------------
+
+/** Map an accent code to a Google Translate TTS host. */
+function accentToHost(accent) {
+  if (!accent) return 'https://translate.google.com'
+  const a = String(accent).trim().toLowerCase()
+  if (a.startsWith('http')) return accent          // full URL passed through
+  if (a === 'us' || a === 'com' || a === 'en') return 'https://translate.google.com'
+  return `https://translate.google.${a}`           // e.g. 'co.uk', 'com.au', 'ca'
 }
 
-var googletts = require('google-tts-api');
-var googlettsaccent = 'us';
-var accent = function(accent) {
-  googlettsaccent = accent;
-  return this;
+/** Loose, space/dash/underscore-insensitive containment match for a device name. */
+function matchesDevice(target, ...candidates) {
+  const norm = (s) => String(s || '').toLowerCase().replace(/[\s_-]+/g, '')
+  const t = norm(target)
+  if (!t) return false
+  return candidates.some((c) => {
+    const n = norm(c)
+    return n && (n.includes(t) || t.includes(n))
+  })
 }
 
-var notify = function(message, callback) {
-  if (!deviceAddress){
-    browser.start();
-    browser.on('serviceUp', function(service) {
-      console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
-        deviceAddress = service.addresses[0];
-        getSpeechUrl(message, deviceAddress, function(res) {
-          callback(res);
-        });
+/** Prefer an IPv4 address from a discovered service. */
+function pickAddress(service) {
+  const addrs = (service && service.addresses) || []
+  return (
+    addrs.find((a) => /^\d+\.\d+\.\d+\.\d+$/.test(a)) ||
+    addrs[0] ||
+    (service && service.referer && service.referer.address) ||
+    null
+  )
+}
+
+// --- discovery ------------------------------------------------------------
+
+/** Resolve a Google Cast device's IP by (fuzzy) name via mDNS. */
+function findDevice(name, timeoutMs = 10000) {
+  return new Promise((resolve, reject) => {
+    const bonjour = new Bonjour()
+    const browser = bonjour.find({ type: 'googlecast' })
+    const done = (fn) => { clearTimeout(timer); browser.stop(); bonjour.destroy(); fn() }
+    const timer = setTimeout(() => {
+      done(() => reject(new Error(`Device "${name}" not found on the network within ${timeoutMs}ms`)))
+    }, timeoutMs)
+    browser.on('up', (service) => {
+      const friendly = service.txt && (service.txt.fn || service.txt.n)
+      if (matchesDevice(name, service.name, service.fqdn, friendly)) {
+        const addr = pickAddress(service)
+        console.log('Device "%s" at %s:%d', service.name, addr, service.port)
+        done(() => (addr ? resolve(addr) : reject(new Error('Found device but no usable address'))))
       }
-      browser.stop();
-    });
-  }else {
-    getSpeechUrl(message, deviceAddress, function(res) {
-      callback(res);
-    });
+    })
+    browser.on('error', (err) => done(() => reject(err)))
+  })
+}
+
+async function resolveAddress() {
+  if (deviceAddress) return deviceAddress
+  if (!deviceName) throw new Error('No device set — call device(name) or ip(address) first')
+  deviceAddress = await findDevice(deviceName)
+  return deviceAddress
+}
+
+// --- TTS + cast -----------------------------------------------------------
+
+function getSpeechUrl(text) {
+  if (String(text).length > 200) {
+    throw new Error('Text is too long for a single TTS request (max 200 characters)')
   }
-};
+  return googleTTS.getAudioUrl(text, { lang: language, slow: slowSpeech, host: ttsHost })
+}
 
-var play = function(mp3_url, callback) {
-  if (!deviceAddress){
-    browser.start();
-    browser.on('serviceUp', function(service) {
-      console.log('Device "%s" at %s:%d', service.name, service.addresses[0], service.port);
-      if (service.name.includes(device.replace(' ', '-'))){
-        deviceAddress = service.addresses[0];
-        getPlayUrl(mp3_url, deviceAddress, function(res) {
-          callback(res);
-        });
-      }
-      browser.stop();
-    });
-  }else {
-    getPlayUrl(mp3_url, deviceAddress, function(res) {
-      callback(res);
-    });
+/** Connect to the device and play a media URL. Resolves with a status string. */
+function castMedia(host, url) {
+  return new Promise((resolve, reject) => {
+    const client = new Client()
+    let settled = false
+    let priorVolume = null   // restored after playback if we changed it
+
+    const finish = (fn) => {
+      if (settled) return
+      settled = true
+      const close = () => { try { client.close() } catch { /* noop */ } finish.done = true; fn() }
+      if (priorVolume != null) client.setVolume(priorVolume, close)
+      else close()
+    }
+
+    client.on('error', (err) => finish(() => reject(err)))
+
+    const launch = () => {
+      client.launch(DefaultMediaReceiver, (err, player) => {
+        if (err) return finish(() => reject(err))
+        const media = { contentId: url, contentType: 'audio/mp3', streamType: 'BUFFERED' }
+        player.load(media, { autoplay: true }, (loadErr) => {
+          if (loadErr) return finish(() => reject(loadErr))
+          // If we changed the volume, wait for playback to finish so we can
+          // restore it; otherwise resolve immediately (original 1.x behavior).
+          if (priorVolume == null) return finish(() => resolve('Device notified'))
+          let started = false
+          player.on('status', (status) => {
+            if (status.playerState === 'PLAYING' || status.playerState === 'BUFFERING') started = true
+            else if (started && status.playerState === 'IDLE') finish(() => resolve('Device notified'))
+          })
+        })
+      })
+    }
+
+    client.connect(host, () => {
+      if (volumeLevel == null) return launch()
+      // Save current volume, set the requested level, then play.
+      client.getVolume((err, vol) => {
+        if (!err && vol) priorVolume = vol
+        client.setVolume({ level: volumeLevel }, () => launch())
+      })
+    })
+  })
+}
+
+/** Bridge a promise to the legacy callback style while still returning it. */
+function dualReturn(promise, callback) {
+  if (typeof callback === 'function') {
+    promise.then((res) => callback(res)).catch((err) => callback('error', err))
   }
-};
+  return promise
+}
 
-var getSpeechUrl = function(text, host, callback) {
-  googletts(text, language, 1, 1000, googlettsaccent).then(function (url) {
-    onDeviceUp(host, url, function(res){
-      callback(res)
-    });
-  }).catch(function (err) {
-    console.error(err.stack);
-  });
-};
+// --- public API (chainable setters, unchanged signatures) -----------------
 
-var getPlayUrl = function(url, host, callback) {
-    onDeviceUp(host, url, function(res){
-      callback(res)
-    });
-};
+const api = {}
 
-var onDeviceUp = function(host, url, callback) {
-  var client = new Client();
-  client.connect(host, function() {
-    client.launch(DefaultMediaReceiver, function(err, player) {
+api.device = function device(name, lang = 'en') {
+  deviceName = name
+  deviceAddress = null   // a new name invalidates any cached address
+  language = lang
+  return api
+}
 
-      var media = {
-        contentId: url,
-        contentType: 'audio/mp3',
-        streamType: 'BUFFERED' // or LIVE
-      };
-      player.load(media, { autoplay: true }, function(err, status) {
-        client.close();
-        callback('Device notified');
-      });
-    });
-  });
+api.ip = function ip(address, lang = 'en') {
+  deviceAddress = address
+  language = lang
+  return api
+}
 
-  client.on('error', function(err) {
-    console.log('Error: %s', err.message);
-    client.close();
-    callback('error');
-  });
-};
+api.accent = function accent(code) {
+  ttsHost = accentToHost(code)
+  return api
+}
 
-exports.ip = ip;
-exports.device = device;
-exports.accent = accent;
-exports.notify = notify;
-exports.play = play;
+/** Set notification volume (0.0–1.0). The prior device volume is restored after. */
+api.volume = function volume(level) {
+  const n = Number(level)
+  if (Number.isFinite(n) && n >= 0 && n <= 1) volumeLevel = n
+  return api
+}
+
+/** Toggle slower TTS speech (default: normal speed). */
+api.slow = function slow(enabled = true) {
+  slowSpeech = !!enabled
+  return api
+}
+
+api.notify = function notify(message, callback) {
+  const p = (async () => {
+    const host = await resolveAddress()
+    return castMedia(host, getSpeechUrl(message))
+  })()
+  return dualReturn(p, callback)
+}
+
+api.play = function play(mp3Url, callback) {
+  const p = (async () => {
+    const host = await resolveAddress()
+    return castMedia(host, mp3Url)
+  })()
+  return dualReturn(p, callback)
+}
+
+// Internal helpers exposed for tests (underscore-prefixed, not part of the API).
+api._accentToHost = accentToHost
+api._matchesDevice = matchesDevice
+api._pickAddress = pickAddress
+
+module.exports = api

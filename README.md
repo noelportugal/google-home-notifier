@@ -1,75 +1,110 @@
 # google-home-notifier
-Send notifications to Google Home
 
-#### Installation
+Send text-to-speech notifications — or play an MP3 — on your **Google Home / Nest** speakers.
+
+> **What's new (1.3.0):** pure-JS device discovery via
+> [`bonjour-service`](https://www.npmjs.com/package/bonjour-service) — **no more
+> native `mdns` build**, no avahi system packages, no patching `node_modules`.
+> `notify()`/`play()` now return Promises (so you can `await` them) while the old
+> callback style keeps working unchanged. Upgraded to `google-tts-api` 2.x. New
+> `volume()` and `slow()` controls.
+
+## Why this still exists in 2026
+
+Google never shipped an official API for "make my speaker say this." The
+[Google Assistant SDK](https://developers.google.com/assistant/sdk/overview) is
+experimental / non-commercial and explicitly **can't broadcast voice messages**;
+the newer [Google Home APIs](https://developers.googleblog.com/en/build-the-future-of-home-with-google-home-apis/)
+are for **device control + automations + Matter**, not media or text-to-speech.
+So casting a generated TTS clip to the speaker — exactly what this library does,
+and what Home Assistant does under the hood — is still the way to do it. This is
+a tiny, dependency-light alternative to running a whole home-automation stack.
+
+## Installation
+
 ```sh
-$ npm install google-home-notifier
+npm install google-home-notifier
 ```
 
-#### Usage
+That's it — it installs and runs cross-platform (macOS / Linux / Raspberry Pi / Windows)
+with no compilation step.
+
+## Usage
+
 ```javascript
-var googlehome = require('google-home-notifier');
-var language = 'pl'; // if not set 'us' language will be used
+const googlehome = require('google-home-notifier');
 
-googlehome.device('Google Home', language); // Change to your Google Home name
-// or if you know your Google Home IP
-// googlehome.ip('192.168.1.20', language);
+// Target by name (discovered on your network)…
+googlehome.device('Living Room');
+// …or skip discovery if you know the IP:
+// googlehome.ip('192.168.1.20');
 
-googlehome.notify('Hey Foo', function(res) {
-  console.log(res);
-});
+// Promise / async (new):
+await googlehome.notify('Hello, Google Home');
+
+// Callback (still supported, unchanged):
+googlehome.notify('Hello, Google Home', (res) => console.log(res));
 ```
 
-#### Listener
-If you want to run a listener, take a look at the example.js file. You can run this from a Raspberry Pi, pc or mac. 
-The example uses ngrok so the server can be reached from outside your network. 
-I tested with ifttt.com Maker channel and it worked like a charm.
+### Language & accent
+
+```javascript
+googlehome.device('Living Room', 'en');   // language code (2nd arg)
+googlehome.accent('co.uk');               // 'us' (default), 'co.uk', 'com.au', 'ca', …
+await googlehome.notify('Right, then');
+```
+
+### Volume & speech rate
+
+```javascript
+googlehome.volume(0.6);   // 0.0–1.0; the device's prior volume is restored afterwards
+googlehome.slow(true);    // slower TTS (default: normal speed)
+await googlehome.notify('Dinner is ready');
+```
+
+### Play an MP3
+
+```javascript
+await googlehome.play('http://example.com/sound.mp3');
+```
+
+> TTS notifications are limited to ~200 characters per request (a Google TTS limit).
+
+## API
+
+| Method | Description |
+| --- | --- |
+| `device(name, lang?)` | Target a device by (fuzzy) name. Chainable. |
+| `ip(address, lang?)` | Target a device by IP, skipping discovery. Chainable. |
+| `accent(code)` | TTS accent/host (`us`, `co.uk`, `com.au`, … or a full URL). Chainable. |
+| `volume(level)` | Notification volume `0.0`–`1.0`; prior device volume restored after. Chainable. |
+| `slow(enabled?)` | Slower TTS speech (default normal). Chainable. |
+| `notify(text, cb?)` | Speak `text`. Returns a `Promise<string>`; `cb(result)` / `cb('error', err)` still work. |
+| `play(url, cb?)` | Play an MP3 `url`. Same return/callback contract as `notify`. |
+
+## HTTP listener (example.js)
+
+`example.js` runs a tiny server so you can trigger notifications over HTTP — handy
+with IFTTT, webhooks, or home automation. It uses [ngrok](https://ngrok.com/) to
+expose the endpoint outside your network.
 
 ```sh
-$ git clone https://github.com/noelportugal/google-home-notifier
-$ cd google-home-notifier
-$ npm install
-$ node example.js
+git clone https://github.com/noelportugal/google-home-notifier
+cd google-home-notifier
+npm install
+node example.js
+```
+
+```
 Endpoints:
     http://192.168.1.20:8091/google-home-notifier
     https://xxxxx.ngrok.io/google-home-notifier
-GET example:
-curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=Hello+Google+Home  - to play given text
-curl -X GET https://xxxxx.ngrok.io/google-home-notifier?text=http%3A%2F%2Fdomain%2Ffile.mp3 - to play from given url
-POST example:
-curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier - to play given text
-curl -X POST -d "http://domain/file.mp3" https://xxxxx.ngrok.io/google-home-notifier - to play from given url
-
-```
-#### Raspberry Pi
-If you are running from Raspberry Pi make sure you have the following before nunning "npm install":
-Use the latest nodejs dist.
-```sh
-curl -sL https://deb.nodesource.com/setup_7.x | sudo -E bash -
-sudo apt-get install nodejs
-```
-Also install these packages:
-```sh
-sudo apt-get install git-core libnss-mdns libavahi-compat-libdnssd-dev
+GET:  curl -X GET "https://xxxxx.ngrok.io/google-home-notifier?text=Hello+Google+Home"
+POST: curl -X POST -d "text=Hello Google Home" https://xxxxx.ngrok.io/google-home-notifier
 ```
 
-## After "npm install"
+If `text` starts with `http(s)://` it's played as an MP3; otherwise it's spoken.
 
-Modify the following file "node_modules/mdns/lib/browser.js"
-```sh
-vi node_modules/mdns/lib/browser.js
-```
-Find this line:
-```javascript
-Browser.defaultResolverSequence = [
-  rst.DNSServiceResolve(), 'DNSServiceGetAddrInfo' in dns_sd ? rst.DNSServiceGetAddrInfo() : rst.getaddrinfo()
-, rst.makeAddressesUnique()
-];
-```
-And change to:
-```javascript
-Browser.defaultResolverSequence = [
-  rst.DNSServiceResolve(), 'DNSServiceGetAddrInfo' in dns_sd ? rst.DNSServiceGetAddrInfo() : rst.getaddrinfo({families:[4]})
-, rst.makeAddressesUnique()
-];
-```
+## License
+
+MIT © Noel Portugal
